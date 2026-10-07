@@ -1,0 +1,137 @@
+{
+  "source": "synthetic",
+  "budget": 25,
+  "gap_days": 0.0,
+  "best_iteration": 739,
+  "split": [
+    {
+      "split": "train",
+      "rows": "228880",
+      "fraud_rate": "0.004692415239426774",
+      "start": "2025-01-01 05:54:36",
+      "end": "2025-03-31 23:54:59"
+    },
+    {
+      "split": "val",
+      "rows": "86313",
+      "fraud_rate": "0.004344652601577978",
+      "start": "2025-04-01 03:16:19",
+      "end": "2025-04-30 23:54:58"
+    },
+    {
+      "split": "test",
+      "rows": "86823",
+      "fraud_rate": "0.003685659329901063",
+      "start": "2025-05-01 02:05:06",
+      "end": "2025-05-30 23:54:59"
+    }
+  ],
+  "ranking_metrics_test": {
+    "lightgbm": {
+      "roc_auc": 0.9710061717512688,
+      "pr_auc": 0.6160979912957932
+    },
+    "rules": {
+      "roc_auc": 0.9312317925389871,
+      "pr_auc": 0.2804556078131367
+    }
+  },
+  "headline": [
+    {
+      "scorer": "lightgbm",
+      "mode": "streaming",
+      "k_per_day": 25,
+      "days": 30,
+      "alerts": 533,
+      "alerts_per_day": 17.766666666666666,
+      "queue_utilisation": 0.7106666666666667,
+      "frauds_total": 320,
+      "frauds_caught": 187,
+      "false_positives": 346,
+      "precision_at_budget": 0.350844277673546,
+      "recall_at_budget": 0.584375,
+      "fraud_gbp_total": 39563.67999999999,
+      "fraud_gbp_caught": 26916.340000000004,
+      "value_capture": 0.6803295345630136,
+      "fp_per_fraud_caught": 1.8502673796791445,
+      "review_cost_gbp": 2132.0,
+      "friction_cost_gbp": 692.0,
+      "net_benefit_gbp": 24092.340000000004,
+      "cost_review_cost": 4.0,
+      "cost_fp_friction_cost": 2.0,
+      "cost_prevention_rate": 1.0
+    },
+    {
+      "scorer": "lightgbm",
+      "mode": "topk",
+      "k_per_day": 25,
+      "days": 30,
+      "alerts": 750,
+      "alerts_per_day": 25.0,
+      "queue_utilisation": 1.0,
+      "frauds_total": 320,
+      "frauds_caught": 197,
+      "false_positives": 553,
+      "precision_at_budget": 0.26266666666666666,
+      "recall_at_budget": 0.615625,
+      "fraud_gbp_total": 39563.67999999999,
+      "fraud_gbp_caught": 30090.14,
+      "value_capture": 0.7605495747614985,
+      "fp_per_fraud_caught": 2.8071065989847717,
+      "review_cost_gbp": 3000.0,
+      "friction_cost_gbp": 1106.0,
+      "net_benefit_gbp": 25984.14,
+      "cost_review_cost": 4.0,
+      "cost_fp_friction_cost": 2.0,
+      "cost_prevention_rate": 1.0
+    },
+    {
+      "scorer": "rules",
+      "mode": "streaming",
+      "k_per_day": 25,
+      "days": 30,
+      "alerts": 597,
+      "alerts_per_day": 19.9,
+      "queue_utilisation": 0.796,
+      "frauds_total": 320,
+      "frauds_caught": 90,
+      "false_positives": 507,
+      "precision_at_budget": 0.1507537688442211,
+      "recall_at_budget": 0.28125,
+      "fraud_gbp_total": 39563.67999999999,
+      "fraud_gbp_caught": 21661.67,
+      "value_capture": 0.5475140330727577,
+      "fp_per_fraud_caught": 5.633333333333334,
+      "review_cost_gbp": 2388.0,
+      "friction_cost_gbp": 1014.0,
+      "net_benefit_gbp": 18259.67,
+      "cost_review_cost": 4.0,
+      "cost_fp_friction_cost": 2.0,
+      "cost_prevention_rate": 1.0
+    },
+    {
+      "scorer": "rules",
+      "mode": "topk",
+      "k_per_day": 25,
+      "days": 30,
+      "alerts": 750,
+      "alerts_per_day": 25.0,
+      "queue_utilisation": 1.0,
+      "frauds_total": 320,
+      "frauds_caught": 95,
+      "false_positives": 655,
+      "precision_at_budget": 0.12666666666666668,
+      "recall_at_budget": 0.296875,
+      "fraud_gbp_total": 39563.67999999999,
+      "fraud_gbp_caught": 22931.47,
+      "value_capture": 0.5796091263502284,
+      "fp_per_fraud_caught": 6.894736842105263,
+      "review_cost_gbp": 3000.0,
+      "friction_cost_gbp": 1310.0,
+      "net_benefit_gbp": 18621.47,
+      "cost_review_cost": 4.0,
+      "cost_fp_friction_cost": 2.0,
+      "cost_prevention_rate": 1.0
+    }
+  ]
+}

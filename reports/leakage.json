@@ -1,0 +1,28 @@
+{
+  "honest_baseline": {
+    "pr_auc": 0.6160979912957932,
+    "roc_auc": 0.9710061717512688,
+    "precision_at_rate": 0.24193548387096775,
+    "recall_at_rate": 0.65625
+  },
+  "inflation_pct_vs_honest": {
+    "random split only (same leakage-safe features)": {
+      "pr_auc": 56.5,
+      "roc_auc": 2.9,
+      "precision_at_rate": 76.2,
+      "recall_at_rate": 48.3
+    },
+    "leaky features only (temporal split)": {
+      "pr_auc": 5.9,
+      "roc_auc": 0.3,
+      "precision_at_rate": 3.8,
+      "recall_at_rate": 3.8
+    },
+    "both mistakes (random split + leaky features)": {
+      "pr_auc": 59.4,
+      "roc_auc": 2.9,
+      "precision_at_rate": 78.7,
+      "recall_at_rate": 50.5
+    }
+  }
+}

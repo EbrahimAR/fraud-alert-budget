@@ -58,7 +58,22 @@ Test period: 26 April to 1 June 2018 (37 days), 104,637 transactions, 3,562 frau
 | Queue utilisation | 81% | 100% |
 | Net benefit over the test period | **$87.3k** | $94.6k |
 
-Ranking metrics on the test period (reference only): ROC-AUC 0.807, PR-AUC 0.153. The full sweep across budgets of 25 to 1,000 alerts per day is in `reports/ieee/results.md`.
+Ranking metrics on the test period (reference only): ROC-AUC 0.807, PR-AUC 0.153.
+
+**Across alert budgets (streaming):**
+
+| Alerts per day | Fraud caught (recall) | False positives per catch | Net benefit |
+|---|---|---|---|
+| 25 | 6% | 2.3 | $40.5k |
+| 50 | 10% | 3.0 | $57.9k |
+| 100 | 18% | 3.6 | $87.3k |
+| 200 | 32% | 4.6 | $123.0k |
+| **500** | **58%** | **7.2** | **$186.6k** |
+| 1,000 | 76% | 11.9 | $190.2k |
+
+Net benefit flattens at about 500 alerts per day: doubling to 1,000 adds only $3.6k while false positives per catch rise from 7.2 to 11.9. Full results, including the hindsight top-K mode, are in `reports/ieee/results.md`.
+
+![IEEE-CIS budget curve](reports/ieee/budget_summary.png)
 
 **Leakage experiment** (`scripts/leakage_experiment.py`). This is a 2×2 design varying split type and feature type, holding everything else fixed (same data, model, hyperparameters and 60/20/20 proportions). Inflation is measured against the honest cell: temporal split with leakage-safe features.
 
@@ -75,7 +90,8 @@ Random-split cells use one seed on IEEE-CIS (`--seeds 1`). Precision and recall 
 - **ROC-AUC hides the leakage.** A random split moves ROC-AUC by 6% but PR-AUC by 132%. A team watching ROC-AUC would not notice the problem.
 - **Both mistakes are serious on real data.** On the synthetic data, leaky features added only 6%; on IEEE-CIS they add 42% on their own, and the two mistakes compound to more than triple PR-AUC.
 - **The 132% is probably an underestimate.** The random-split model hit the 3,000-tree cap and was still improving, because it was memorising patterns from the test period it had seen in training. The honest model stopped at 750 trees.
-- **A static threshold wastes capacity.** The threshold calibrated on the validation period was too strict for the test period, so on average 19 of the 100 daily slots sat empty. Streaming caught about 100 fewer frauds than the hindsight ceiling. Recalibrating the threshold on a rolling recent window would close part of that gap.
+- **A static threshold wastes capacity.** At 100 alerts per day, the threshold calibrated on the validation period was too strict for the test period, so on average 19 of the 100 daily slots sat empty. Streaming caught about 100 fewer frauds than the hindsight ceiling. Recalibrating the threshold on a rolling recent window would close part of that gap.
+- **The best budget depends on the costs.** On IEEE-CIS, frauds are large relative to the assumed $4 review cost, so extra alerts keep paying for themselves up to about 500 a day. On the synthetic data, with smaller frauds, benefit peaks at 25–50 a day. A team should choose its capacity from a sweep like this under its own cost assumptions, not from a fixed rule.
 - **Why PR-AUC is only 0.15.** Leaderboard solutions for this competition used around 400 columns, including the anonymised V and identity features. This project uses 8 raw columns and tests on a genuinely later period. The goal is an honest estimate of future performance, not a leaderboard score.
 
 ## Results: synthetic data (seed 42)

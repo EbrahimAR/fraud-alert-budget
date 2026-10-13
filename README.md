@@ -2,7 +2,7 @@
 
 A transaction fraud classifier evaluated the way a fraud operations team experiences it: a fixed number of analysts can review **K alerts per day**, and what matters is how much fraud money those K reviews stop, how many innocent customers get bothered along the way, and whether the whole thing pays for itself.
 
-Built with Python, LightGBM, pandas and scikit-learn.
+Built with Python, LightGBM, pandas and scikit-learn. Evaluated on the real [IEEE-CIS](https://www.kaggle.com/c/ieee-fraud-detection) fraud dataset, with a bundled synthetic generator so the pipeline also runs without downloading anything.
 
 ## Why this project exists
 
@@ -10,9 +10,9 @@ Most fraud-detection notebooks share three problems:
 
 1. **Random train/test splits.** The model gets tested on transactions that happened *before* some of the ones it learned from, and frauds from the same compromised card land on both sides of the split. Scores look excellent and then fall apart in production.
 2. **Features that peek at the future.** A common pattern is `df.groupby('card_id')['amount'].transform('mean')` run on the full dataset before splitting. That average includes transactions that hadn't happened yet.
-3. **Metrics nobody in operations uses.** ROC-AUC says little to a team that can only review 25 alerts a day.
+3. **Metrics nobody in operations uses.** ROC-AUC says little to a team that can only review 100 alerts a day.
 
-This repo fixes each one and measures how much the first two mistakes inflate results.
+This repo fixes each one and measures how much the first two mistakes inflate results. On IEEE-CIS, random splitting alone **more than doubled** PR-AUC (+132%), while ROC-AUC moved only 6%.
 
 ## Method
 
@@ -22,30 +22,65 @@ This repo fixes each one and measures how much the first two mistakes inflate re
 
 - transaction-level fields: amount, hour, day of week, online flag, merchant category, card BIN
 - the card's history *strictly before* this transaction: count, mean and standard deviation of past amounts, this amount relative to the card's normal spend, seconds since the last transaction, share of past online use, first-ever use of this merchant category
-- velocity over the windows `[t − 1h, t)`, `[t − 24h, t)` and `[t − 7d, t)`: transaction count, total amount, and number of sub-£5 transactions in the last hour (a card-testing signal)
+- velocity over the windows `[t − 1h, t)`, `[t − 24h, t)` and `[t − 7d, t)`: transaction count, total amount, and number of small (< 5) transactions in the last hour (a card-testing signal)
 
 The windows are computed with `searchsorted` over a composite (card, time) key. That makes them exact and vectorised (about 1 second for 400k rows), and makes the "strictly before" boundary explicit in the code. Labels are never used to build features.
 
-**Model.** LightGBM with early stopping on validation **PR-AUC**. With roughly 0.4% fraud, ROC-AUC is dominated by easy negatives, while PR-AUC tracks the top of the ranking, which is the only part an analyst ever sees.
+**Model.** LightGBM with early stopping on validation **PR-AUC**. Fraud is rare (3.4% of IEEE-CIS transactions, 0.4% in the synthetic data), so ROC-AUC is dominated by easy negatives, while PR-AUC tracks the top of the ranking, which is the only part an analyst ever sees.
 
 **Evaluation harness** (`evaluate.py`). There are two alerting modes:
 
-- **streaming** (realistic): a score threshold is calibrated on the validation month to produce about K alerts per day. On the test period, transactions arrive in time order, and each one above threshold is alerted until that day's K slots are full.
+- **streaming** (realistic): a score threshold is calibrated on the validation period to produce about K alerts per day. On the test period, transactions arrive in time order, and each one above threshold is alerted until that day's K slots are full.
 - **topk** (hindsight upper bound): the K highest-scoring transactions each day. This isn't achievable in real time but is useful as a ceiling.
 
-Reported per budget: precision and recall at budget, £ caught, value capture, false positives per fraud caught, queue utilisation, and **net £ benefit**:
+Reported per budget: precision and recall at budget, fraud amount caught, value capture, false positives per fraud caught, queue utilisation, and **net benefit**:
 
 ```
-net benefit = fraud £ caught × prevention rate
+net benefit = fraud amount caught × prevention rate
             − alerts × review cost
             − false positives × customer friction cost
 ```
 
-**Baseline.** A hand-written rules score (`rules.py`) covering card testing, velocity bursts, unusually large amounts, new merchant category, night-time and online. A model has to beat this, not just a random ranking.
+**Baseline.** A hand-written rules score (`rules.py`) covering card testing, velocity bursts, unusually large amounts, new merchant category, night-time and online. It is designed around the synthetic data's fraud patterns and is only a meaningful comparison there (see Limitations).
 
-## Results (synthetic data, seed 42)
+## Results: IEEE-CIS
 
-> These numbers come from the bundled synthetic generator, whose properties I designed (see `synth.py`). They demonstrate the methodology. Run on IEEE-CIS for numbers that mean something.
+Test period: 26 April to 1 June 2018 (37 days), 104,637 transactions, 3,562 frauds. Amounts are USD. Assumed costs: $4 per review, $2 friction per false positive.
+
+**At 100 alerts per day:**
+
+| | Streaming (realistic) | Top-K (hindsight ceiling) |
+|---|---|---|
+| Frauds caught | 657 / 3,562 (18.4%) | 756 / 3,562 (21.2%) |
+| Precision of alerts | 21.9% | 20.4% |
+| Value capture (fraud $ stopped) | 19.5% | 21.6% |
+| False positives per fraud caught | 3.57 | 3.89 |
+| Queue utilisation | 81% | 100% |
+| Net benefit over the test period | **$87.3k** | $94.6k |
+
+Ranking metrics on the test period (reference only): ROC-AUC 0.807, PR-AUC 0.153. The full sweep across budgets of 25 to 1,000 alerts per day is in `reports/ieee/results.md`.
+
+**Leakage experiment** (`scripts/leakage_experiment.py`). This is a 2×2 design varying split type and feature type, holding everything else fixed (same data, model, hyperparameters and 60/20/20 proportions). Inflation is measured against the honest cell: temporal split with leakage-safe features.
+
+| Mistake | PR-AUC | Recall at top 1% | ROC-AUC |
+|---|---|---|---|
+| Random split only (same safe features) | **+131.7%** (0.153 → 0.355) | +134.8% | +6.1% |
+| Leaky features only (temporal split) | +41.9% | +46.7% | +3.7% |
+| Both mistakes | +217.6% | +199.7% | +11.5% |
+
+Random-split cells use one seed on IEEE-CIS (`--seeds 1`). Precision and recall use the top 1% of each test set, so test sets of different sizes are compared on equal terms.
+
+### What the IEEE-CIS results show
+
+- **ROC-AUC hides the leakage.** A random split moves ROC-AUC by 6% but PR-AUC by 132%. A team watching ROC-AUC would not notice the problem.
+- **Both mistakes are serious on real data.** On the synthetic data, leaky features added only 6%; on IEEE-CIS they add 42% on their own, and the two mistakes compound to more than triple PR-AUC.
+- **The 132% is probably an underestimate.** The random-split model hit the 3,000-tree cap and was still improving, because it was memorising patterns from the test period it had seen in training. The honest model stopped at 750 trees.
+- **A static threshold wastes capacity.** The threshold calibrated on the validation period was too strict for the test period, so on average 19 of the 100 daily slots sat empty. Streaming caught about 100 fewer frauds than the hindsight ceiling. Recalibrating the threshold on a rolling recent window would close part of that gap.
+- **Why PR-AUC is only 0.15.** Leaderboard solutions for this competition used around 400 columns, including the anonymised V and identity features. This project uses 8 raw columns and tests on a genuinely later period. The goal is an honest estimate of future performance, not a leaderboard score.
+
+## Results: synthetic data (seed 42)
+
+The bundled generator (`synth.py`) lets the whole pipeline run without a download. I designed its properties: fraud bursts on compromised cards, a card-testing pattern, and an account-takeover pattern that emerges late in the timeline (drift). These numbers demonstrate the methodology and should not be read as real-world performance.
 
 Test period: May 2025, 86,823 transactions, 320 frauds. Assumed costs: £4 per review, £2 friction per false positive.
 
@@ -59,7 +94,7 @@ Test period: May 2025, 86,823 transactions, 320 frauds. Assumed costs: £4 per r
 | Net benefit over the month | **£24.1k** | £18.3k |
 | PR-AUC (reference) | 0.616 | 0.280 |
 
-**Leakage experiment** (`scripts/leakage_experiment.py`). This is a 2×2 design varying split type and feature type, holding everything else fixed. Random-split cells are averaged over 3 seeds. Inflation is measured against the honest cell (temporal split, leakage-safe features):
+**Leakage experiment** (random-split cells averaged over 3 seeds):
 
 | Mistake | PR-AUC inflation | Recall at top 1% | ROC-AUC |
 |---|---|---|---|
@@ -67,14 +102,10 @@ Test period: May 2025, 86,823 transactions, 320 frauds. Assumed costs: £4 per r
 | Leaky features only (temporal split) | +5.9% | +3.8% | +0.3% |
 | Both mistakes | +59.4% | +50.5% | +2.9% |
 
-The precision and recall comparisons use the top 1% of each test set, so test sets of different sizes are compared on equal terms.
+### What the synthetic results show
 
-### What the results show
-
-- **ROC-AUC hides the leakage almost completely.** It moves 2.9% while PR-AUC moves 56%. A team watching ROC-AUC would not notice the problem.
-- **The split matters more than the features here.** Random splitting lets sibling frauds from the same burst sit in both train and test. It also lets the model train on the fraud pattern that only appears in the later months.
 - **Drift is visible.** The model catches 93% of the long-standing card-testing pattern but only 37% of the account-takeover pattern that emerges late in the timeline.
-- **A static threshold can waste capacity.** At 5 alerts per day, the streaming model *lost* to the rules baseline. Its April-calibrated threshold was too strict for May's shifted scores, so it filled only 17% of the queue: every alert was fraud, but most of the slots sat empty. Recalibrating the threshold on a rolling recent window would address this (see Limitations).
+- **A static threshold can backfire.** At 5 alerts per day, the streaming model *lost* to the rules baseline. Its threshold was too strict for May's shifted scores, so it filled only 17% of the queue: every alert was fraud, but most of the slots sat empty.
 - **More alerts isn't better.** Net benefit peaks at around 25–50 alerts per day. Beyond that, review costs exceed the extra fraud caught (see `reports/budget_curves.png`).
 
 ![budget curves](reports/budget_curves.png)
@@ -84,20 +115,22 @@ The precision and recall comparisons use the top 1% of each test set, so test se
 ```bash
 pip install -e ".[dev]"
 pytest -q                                   # 15 tests
-python scripts/run_pipeline.py              # ~10 s on a laptop
+python scripts/run_pipeline.py              # synthetic data
 python scripts/leakage_experiment.py        # 8 model fits; resumable (cached per cell)
 ```
 
 Outputs go to `reports/`: `results.md`, `leakage.md`, `budget_sweep.csv`, `feature_importance.csv` and `budget_curves.png`.
 
-**On real data (IEEE-CIS).** Download `train_transaction.csv` from the [Kaggle competition](https://www.kaggle.com/c/ieee-fraud-detection/data) into `data/ieee-fraud-detection/`, then run:
+**On IEEE-CIS.** Join the [Kaggle competition](https://www.kaggle.com/c/ieee-fraud-detection/data) to accept its rules, download the data, and unzip it so that `train_transaction.csv` sits in `data/ieee-fraud-detection/`. Then run:
 
 ```bash
-python scripts/run_pipeline.py --source ieee --data-dir data/ieee-fraud-detection --out reports/ieee
-python scripts/leakage_experiment.py --source ieee --data-dir data/ieee-fraud-detection --out reports/ieee
+python scripts/run_pipeline.py --source ieee --data-dir data/ieee-fraud-detection --out reports/ieee --budget 100 --sweep "25,50,100,200,500,1000"
+python scripts/leakage_experiment.py --source ieee --data-dir data/ieee-fraud-detection --out reports/ieee --seeds 1
 ```
 
-IEEE-CIS has no card identifier, so the loader builds the community-standard proxy `card1 + addr1 + (day − D1)`. Amounts are USD but are reported as £ for consistency. Note that in this dataset, transactions on an account after a confirmed fraud are often also labelled fraud, which makes card-history features unusually strong.
+The leakage experiment trains several models on about 590k rows and can take an hour or more on a laptop. It caches each cell, so an interrupted run resumes where it stopped.
+
+IEEE-CIS has no card identifier, so the loader builds the community-standard proxy `card1 + addr1 + (day − D1)`. In this dataset, transactions on an account after a confirmed fraud are often also labelled fraud, which makes card-history features unusually strong. The dataset is not included in this repo; Kaggle's competition rules do not allow redistributing it.
 
 ## Tests
 
@@ -115,11 +148,13 @@ The evaluation tests check that daily budgets are never exceeded, that streaming
 
 ## Assumptions and limitations
 
-- **Cost model.** £4 per review assumes about 10 minutes of analyst time at roughly £24/h fully loaded. £2 friction per false positive is a guess. Both are CLI flags, and conclusions should be checked across a range of values.
+- **Cost model.** A review cost of 4 assumes about 10 minutes of analyst time at roughly 24 per hour fully loaded. A friction cost of 2 per false positive is a guess. Both are CLI flags, and conclusions should be checked across a range of values.
+- **Rules baseline is synthetic-only.** Its rules target patterns in the synthetic data (small card-testing amounts, an online flag, categories such as crypto and gift cards). IEEE-CIS is entirely card-not-present and its product codes are single letters, so the rules score at random level there (ROC-AUC 0.499). Rules written for IEEE-CIS would be needed for a fair comparison on that data.
 - **No card blocking.** Catching the first fraud in a burst would, in reality, block the card and prevent the rest of the burst. Each transaction is scored independently here, which understates the value of early detection.
-- **Static threshold.** It is calibrated once on validation. Production systems recalibrate on a rolling recent window, and the 5-per-day result shows why.
-- **Single temporal fold.** The honest estimate comes from one test month. Rolling-origin backtesting over several months would give a variance estimate for the honest cell, as the random cells already have.
-- **Synthetic data.** It encodes my own assumptions about fraud behaviour. The headline numbers should come from IEEE-CIS.
+- **Static threshold.** It is calibrated once on validation. Production systems recalibrate on a rolling recent window, and both datasets show why.
+- **Single temporal fold.** The honest estimate comes from one test period. Rolling-origin backtesting over several months would give it a variance estimate.
+- **One seed for IEEE-CIS random splits.** Rerunning with `--seeds 3` would give a mean and spread for the random-split cells, as on the synthetic data.
+- **Synthetic data.** It encodes my own assumptions about fraud behaviour, so its numbers demonstrate the method rather than real-world performance.
 
 ## Layout
 
@@ -130,10 +165,10 @@ src/fraud_alert_budget/
   features.py   leakage-safe features + deliberately leaky ones for the experiment
   split.py      temporal (with optional label gap) and random splits
   model.py      LightGBM with PR-AUC early stopping
-  rules.py      rules baseline
+  rules.py      rules baseline (synthetic data only)
   evaluate.py   alert-budget harness and business metrics
   pipeline.py   shared glue
 scripts/        run_pipeline.py, leakage_experiment.py
 tests/          15 tests
-reports/        generated outputs
+reports/        generated outputs (reports/ieee/ for IEEE-CIS runs)
 ```

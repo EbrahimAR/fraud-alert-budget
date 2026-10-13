@@ -1,0 +1,137 @@
+{
+  "source": "ieee",
+  "budget": 25,
+  "gap_days": 0.0,
+  "best_iteration": 750,
+  "split": [
+    {
+      "split": "train",
+      "rows": "380815",
+      "fraud_rate": "0.03416619618449904",
+      "start": "2017-12-02 00:00:00",
+      "end": "2018-03-21 04:46:58"
+    },
+    {
+      "split": "val",
+      "rows": "105088",
+      "fraud_rate": "0.03891976248477467",
+      "start": "2018-03-21 04:47:50",
+      "end": "2018-04-26 14:22:54"
+    },
+    {
+      "split": "test",
+      "rows": "104637",
+      "fraud_rate": "0.0340414958379923",
+      "start": "2018-04-26 14:23:39",
+      "end": "2018-06-01 23:58:51"
+    }
+  ],
+  "ranking_metrics_test": {
+    "lightgbm": {
+      "roc_auc": 0.8065372776065494,
+      "pr_auc": 0.15306687011239295
+    },
+    "rules": {
+      "roc_auc": 0.4987372008627635,
+      "pr_auc": 0.03625937723492631
+    }
+  },
+  "headline": [
+    {
+      "scorer": "lightgbm",
+      "mode": "streaming",
+      "k_per_day": 25,
+      "days": 37,
+      "alerts": 648,
+      "alerts_per_day": 17.513513513513512,
+      "queue_utilisation": 0.7005405405405405,
+      "frauds_total": 3562,
+      "frauds_caught": 196,
+      "false_positives": 452,
+      "precision_at_budget": 0.30246913580246915,
+      "recall_at_budget": 0.055025266704098824,
+      "fraud_gbp_total": 533488.9269999999,
+      "fraud_gbp_caught": 44026.53999999999,
+      "value_capture": 0.0825256866109238,
+      "fp_per_fraud_caught": 2.306122448979592,
+      "review_cost_gbp": 2592.0,
+      "friction_cost_gbp": 904.0,
+      "net_benefit_gbp": 40530.53999999999,
+      "cost_review_cost": 4.0,
+      "cost_fp_friction_cost": 2.0,
+      "cost_prevention_rate": 1.0
+    },
+    {
+      "scorer": "lightgbm",
+      "mode": "topk",
+      "k_per_day": 25,
+      "days": 37,
+      "alerts": 925,
+      "alerts_per_day": 25.0,
+      "queue_utilisation": 1.0,
+      "frauds_total": 3562,
+      "frauds_caught": 244,
+      "false_positives": 681,
+      "precision_at_budget": 0.2637837837837838,
+      "recall_at_budget": 0.06850084222346996,
+      "fraud_gbp_total": 533488.9269999999,
+      "fraud_gbp_caught": 48960.656,
+      "value_capture": 0.0917744558923151,
+      "fp_per_fraud_caught": 2.790983606557377,
+      "review_cost_gbp": 3700.0,
+      "friction_cost_gbp": 1362.0,
+      "net_benefit_gbp": 43898.656,
+      "cost_review_cost": 4.0,
+      "cost_fp_friction_cost": 2.0,
+      "cost_prevention_rate": 1.0
+    },
+    {
+      "scorer": "rules",
+      "mode": "streaming",
+      "k_per_day": 25,
+      "days": 37,
+      "alerts": 711,
+      "alerts_per_day": 19.216216216216218,
+      "queue_utilisation": 0.7686486486486487,
+      "frauds_total": 3562,
+      "frauds_caught": 35,
+      "false_positives": 676,
+      "precision_at_budget": 0.04922644163150492,
+      "recall_at_budget": 0.009825940482874789,
+      "fraud_gbp_total": 533488.9269999999,
+      "fraud_gbp_caught": 5148.671,
+      "value_capture": 0.009650942577108074,
+      "fp_per_fraud_caught": 19.314285714285713,
+      "review_cost_gbp": 2844.0,
+      "friction_cost_gbp": 1352.0,
+      "net_benefit_gbp": 952.6710000000003,
+      "cost_review_cost": 4.0,
+      "cost_fp_friction_cost": 2.0,
+      "cost_prevention_rate": 1.0
+    },
+    {
+      "scorer": "rules",
+      "mode": "topk",
+      "k_per_day": 25,
+      "days": 37,
+      "alerts": 925,
+      "alerts_per_day": 25.0,
+      "queue_utilisation": 1.0,
+      "frauds_total": 3562,
+      "frauds_caught": 49,
+      "false_positives": 876,
+      "precision_at_budget": 0.05297297297297297,
+      "recall_at_budget": 0.013756316676024706,
+      "fraud_gbp_total": 533488.9269999999,
+      "fraud_gbp_caught": 23447.647,
+      "value_capture": 0.043951515792191885,
+      "fp_per_fraud_caught": 17.877551020408163,
+      "review_cost_gbp": 3700.0,
+      "friction_cost_gbp": 1752.0,
+      "net_benefit_gbp": 17995.647,
+      "cost_review_cost": 4.0,
+      "cost_fp_friction_cost": 2.0,
+      "cost_prevention_rate": 1.0
+    }
+  ]
+}

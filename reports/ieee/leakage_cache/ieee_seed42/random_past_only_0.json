@@ -1,0 +1,1 @@
+{"roc_auc": 0.8559568743621971, "pr_auc": 0.35470036971143115, "alert_rate": 0.01, "precision_at_rate": 0.6486028789161727, "recall_at_rate": 0.1878371750858264, "best_iteration": 3000.0}

@@ -5,3 +5,4 @@ data/*
 !data/.gitkeep
 .venv/
 reports/leakage_cache/
+reports/*/leakage_cache/

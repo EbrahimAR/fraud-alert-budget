@@ -2,16 +2,14 @@
 
 Test period: 2018-04-26 to 2018-06-01, 104,637 transactions, 3562 frauds.
 
-Cost model: £4 per review, £2 friction per false positive.
+Cost model: \$4 per review, \$2 friction per false positive.
 
-## Headline: 100 alerts/day
+## Headline: 500 alerts/day
 
-|                           |   alerts_per_day |   queue_utilisation |   frauds_caught |   frauds_total |   precision_at_budget |   recall_at_budget |   value_capture |   fp_per_fraud_caught |   fraud_gbp_caught |   net_benefit_gbp |
-|:--------------------------|-----------------:|--------------------:|----------------:|---------------:|----------------------:|-------------------:|----------------:|----------------------:|-------------------:|------------------:|
-| ('lightgbm', 'streaming') |           81.108 |               0.811 |             657 |           3562 |                 0.219 |              0.184 |           0.195 |                 3.568 |           103960   |           87267.7 |
-| ('lightgbm', 'topk')      |          100     |               1     |             756 |           3562 |                 0.204 |              0.212 |           0.216 |                 3.894 |           115263   |           94574.7 |
-| ('rules', 'streaming')    |           88.541 |               0.885 |             183 |           3562 |                 0.056 |              0.051 |           0.117 |                16.902 |            62326.7 |           43036.7 |
-| ('rules', 'topk')         |          100     |               1     |             194 |           3562 |                 0.052 |              0.054 |           0.138 |                18.072 |            73799.4 |           51987.4 |
+|                           |   alerts_per_day |   queue_utilisation |   frauds_caught |   frauds_total |   precision_at_budget |   recall_at_budget |   value_capture |   fp_per_fraud_caught |   fraud_amount_caught (\$) |   net_benefit (\$) |
+|:--------------------------|-----------------:|--------------------:|----------------:|---------------:|----------------------:|-------------------:|----------------:|----------------------:|---------------------------:|-------------------:|
+| ('lightgbm', 'streaming') |          460.838 |               0.922 |            2075 |           3562 |                 0.122 |              0.583 |           0.534 |                 7.217 |                     284729 |             186573 |
+| ('lightgbm', 'topk')      |          500     |               1     |            2175 |           3562 |                 0.118 |              0.611 |           0.557 |                 7.506 |                     297185 |             190535 |
 
 
 ## Ranking metrics on test (reference only)
@@ -19,19 +17,18 @@ Cost model: £4 per review, £2 friction per false positive.
 |          |   roc_auc |   pr_auc |
 |:---------|----------:|---------:|
 | lightgbm |    0.8065 |   0.1531 |
-| rules    |    0.4987 |   0.0363 |
 
 
 ## Budget sweep (streaming mode)
 
-|   k_per_day |   ('net_benefit_gbp', 'lightgbm') |   ('net_benefit_gbp', 'rules') |   ('fp_per_fraud_caught', 'lightgbm') |   ('fp_per_fraud_caught', 'rules') |   ('recall_at_budget', 'lightgbm') |   ('recall_at_budget', 'rules') |
-|------------:|----------------------------------:|-------------------------------:|--------------------------------------:|-----------------------------------:|-----------------------------------:|--------------------------------:|
-|          25 |                           40530.5 |                         952.67 |                                  2.31 |                              19.31 |                               0.06 |                            0.01 |
-|          50 |                           57918   |                       30948.7  |                                  2.99 |                              16.98 |                               0.1  |                            0.02 |
-|         100 |                           87267.8 |                       43036.8  |                                  3.57 |                              16.9  |                               0.18 |                            0.05 |
-|         200 |                          122964   |                       33303.4  |                                  4.58 |                              22.59 |                               0.32 |                            0.08 |
-|         500 |                          186573   |                       97166.4  |                                  7.22 |                              23.11 |                               0.58 |                            0.2  |
-|        1000 |                          190162   |                       50341    |                                 11.92 |                              28.75 |                               0.76 |                            0.32 |
+|   k_per_day |   net_benefit (\$), lightgbm |   fp_per_fraud_caught, lightgbm |   recall_at_budget, lightgbm |
+|------------:|-----------------------------:|--------------------------------:|-----------------------------:|
+|          25 |                      40530.5 |                            2.31 |                         0.06 |
+|          50 |                      57918   |                            2.99 |                         0.1  |
+|         100 |                      87267.8 |                            3.57 |                         0.18 |
+|         200 |                     122964   |                            4.58 |                         0.32 |
+|         500 |                     186573   |                            7.22 |                         0.58 |
+|        1000 |                     190162   |                           11.92 |                         0.76 |
 
 
 ## Top features (gain share)

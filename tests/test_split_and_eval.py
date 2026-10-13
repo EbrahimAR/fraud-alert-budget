@@ -69,4 +69,4 @@ def test_budget_report_arithmetic():
     assert r["frauds_caught"] == 1 and r["false_positives"] == 1
     assert r["fp_per_fraud_caught"] == 1.0
     assert r["value_capture"] == 100 / 130
-    assert r["net_benefit_gbp"] == 100 - 2 * 4 - 1 * 2
+    assert r["net_benefit"] == 100 - 2 * 4 - 1 * 2

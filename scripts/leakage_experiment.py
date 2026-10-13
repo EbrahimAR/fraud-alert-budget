@@ -100,6 +100,7 @@ def main() -> None:
     raw.to_csv(out / "leakage_raw.csv", index=False)
     (out / "leakage.json").write_text(json.dumps({
         "honest_baseline": honest.to_dict(),
+        "cell_means": {f"{s}/{f}": row.to_dict() for (s, f), row in means.iterrows()},
         "inflation_pct_vs_honest": comparisons,
     }, indent=2), encoding="utf-8")
 

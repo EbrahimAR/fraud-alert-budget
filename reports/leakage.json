@@ -5,6 +5,32 @@
     "precision_at_rate": 0.24193548387096775,
     "recall_at_rate": 0.65625
   },
+  "cell_means": {
+    "random/past_only": {
+      "pr_auc": 0.9638870014219107,
+      "roc_auc": 0.9991165756359933,
+      "precision_at_rate": 0.4262023217247098,
+      "recall_at_rate": 0.9733612694982318
+    },
+    "random/with_leaky": {
+      "pr_auc": 0.9819852156313257,
+      "roc_auc": 0.9994476023132856,
+      "precision_at_rate": 0.4324212271973466,
+      "recall_at_rate": 0.9877242745548277
+    },
+    "temporal/past_only": {
+      "pr_auc": 0.6160979912957932,
+      "roc_auc": 0.9710061717512688,
+      "precision_at_rate": 0.24193548387096775,
+      "recall_at_rate": 0.65625
+    },
+    "temporal/with_leaky": {
+      "pr_auc": 0.6521709233594076,
+      "roc_auc": 0.9738073751777395,
+      "precision_at_rate": 0.2511520737327189,
+      "recall_at_rate": 0.68125
+    }
+  },
   "inflation_pct_vs_honest": {
     "random split only (same leakage-safe features)": {
       "pr_auc": 56.5,

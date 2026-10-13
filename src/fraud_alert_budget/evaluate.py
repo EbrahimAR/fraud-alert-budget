@@ -4,10 +4,10 @@ A fraud operations team does not consume a ROC curve. It has a fixed number of
 analysts who can review K alerts per day. The questions that matter are:
 
 * Of the K alerts we review, how many are fraud?          (precision at budget)
-* How much fraud money do we stop?                         (£ caught, value capture)
+* How much fraud money do we stop?                         (amount caught, value capture)
 * How many innocent customers do we bother per catch?      (false positives per fraud caught)
 * After paying for reviews and customer friction, are we
-  better off than doing nothing?                           (net £ benefit)
+  better off than doing nothing?                           (net benefit)
 
 Two alerting modes
 ------------------
@@ -34,10 +34,12 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 
 @dataclass
 class CostModel:
-    """Money assumptions. All configurable; defaults are stated assumptions,
+    """Money assumptions, in currency units (the same currency as the
+    transaction amounts). All configurable; defaults are stated assumptions,
     not industry facts.
 
-    review_cost       analyst cost per alert (~10 min at a ~£24/h loaded rate)
+    review_cost       analyst cost per alert (~10 min at a loaded rate of
+                      ~24 currency units per hour)
     fp_friction_cost  cost of a false alarm to the customer relationship
                       (blocked card, call to the customer, possible churn)
     prevention_rate   share of a caught fraud's amount actually saved
@@ -102,9 +104,9 @@ def budget_report(y: np.ndarray, amount: np.ndarray, alert: np.ndarray,
     tp = int((alert & y).sum())
     fp = int((alert & ~y).sum())
     n_alerts = tp + fp
-    fraud_total_gbp = float(amount[y].sum())
-    caught_gbp = float(amount[alert & y].sum())
-    saved = cost.prevention_rate * caught_gbp
+    fraud_total = float(amount[y].sum())
+    caught = float(amount[alert & y].sum())
+    saved = cost.prevention_rate * caught
     review = cost.review_cost * n_alerts
     friction = cost.fp_friction_cost * fp
 
@@ -119,13 +121,13 @@ def budget_report(y: np.ndarray, amount: np.ndarray, alert: np.ndarray,
         "false_positives": fp,
         "precision_at_budget": tp / n_alerts if n_alerts else 0.0,
         "recall_at_budget": tp / y.sum() if y.sum() else 0.0,
-        "fraud_gbp_total": fraud_total_gbp,
-        "fraud_gbp_caught": caught_gbp,
-        "value_capture": caught_gbp / fraud_total_gbp if fraud_total_gbp else 0.0,
+        "fraud_amount_total": fraud_total,
+        "fraud_amount_caught": caught,
+        "value_capture": caught / fraud_total if fraud_total else 0.0,
         "fp_per_fraud_caught": fp / tp if tp else float("inf"),
-        "review_cost_gbp": review,
-        "friction_cost_gbp": friction,
-        "net_benefit_gbp": saved - review - friction,
+        "review_cost": review,
+        "friction_cost": friction,
+        "net_benefit": saved - review - friction,
         **{f"cost_{k}": v for k, v in asdict(cost).items()},
     }
 

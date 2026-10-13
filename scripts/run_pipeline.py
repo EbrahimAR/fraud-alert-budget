@@ -23,19 +23,35 @@ from fraud_alert_budget.pipeline import n_days, prepare, xy
 from fraud_alert_budget.rules import rule_score
 from fraud_alert_budget.split import temporal_split
 
+# headline budget, sweep and currency symbol per source (IEEE-CIS amounts are USD)
+SOURCE_DEFAULTS = {
+    "synthetic": {"budget": 25, "sweep": "5,10,25,50,100,200", "currency": "£"},
+    "ieee": {"budget": 500, "sweep": "25,50,100,200,500,1000", "currency": "$"},
+}
+
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--source", default="synthetic", choices=["synthetic", "ieee"])
     ap.add_argument("--data-dir", default=None)
-    ap.add_argument("--budget", type=int, default=25, help="headline alerts per day")
-    ap.add_argument("--sweep", default="5,10,25,50,100,200")
+    ap.add_argument("--budget", type=int, default=None,
+                    help="headline alerts per day (default: 25 synthetic, 500 ieee)")
+    ap.add_argument("--sweep", default=None,
+                    help="comma-separated alert budgets (default depends on --source)")
     ap.add_argument("--gap-days", type=float, default=0.0, help="label-maturity gap")
     ap.add_argument("--review-cost", type=float, default=4.0)
     ap.add_argument("--fp-cost", type=float, default=2.0)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--out", default="reports")
     args = ap.parse_args()
+    defaults = SOURCE_DEFAULTS[args.source]
+    if args.budget is None:
+        args.budget = defaults["budget"]
+    if args.sweep is None:
+        args.sweep = defaults["sweep"]
+    cur = defaults["currency"]
+    # "$" would start mathtext in matplotlib and maths in GitHub markdown
+    cur_esc = cur.replace("$", r"\$")
 
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
     cost = CostModel(review_cost=args.review_cost, fp_friction_cost=args.fp_cost)
@@ -53,8 +69,11 @@ def main() -> None:
     va, te = df.loc[split.val], df.loc[split.test].reset_index(drop=True)
     scores = {
         "lightgbm": (model.predict_proba(X_va)[:, 1], model.predict_proba(X_te)[:, 1]),
-        "rules": (rule_score(va), rule_score(te)),
     }
+    if args.source == "synthetic":
+        # the rules target the synthetic fraud patterns; on other data they
+        # rank at random level, so they are not a meaningful baseline there
+        scores["rules"] = (rule_score(va), rule_score(te))
     val_days = n_days(va["timestamp"])
 
     ranking = {name: ranking_metrics(y_te, s[1]) for name, s in scores.items()}
@@ -98,11 +117,11 @@ def main() -> None:
     fig, ax = plt.subplots(1, 2, figsize=(11, 4))
     for (name, mode), g in sweep.groupby(["scorer", "mode"]):
         style = "-" if mode == "streaming" else ":"
-        ax[0].plot(g["k_per_day"], g["net_benefit_gbp"] / 1000, style, marker="o", label=f"{name} ({mode})")
+        ax[0].plot(g["k_per_day"], g["net_benefit"] / 1000, style, marker="o", label=f"{name} ({mode})")
         ax[1].plot(g["k_per_day"], g["fp_per_fraud_caught"], style, marker="o", label=f"{name} ({mode})")
     ax[0].axhline(0, color="grey", lw=0.8)
-    ax[0].set(xscale="log", xlabel="alert budget (alerts/day)", ylabel="net benefit on test (£k)",
-              title="Net £ benefit vs alert capacity")
+    ax[0].set(xscale="log", xlabel="alert budget (alerts/day)", ylabel=f"net benefit on test ({cur_esc}k)",
+              title=f"Net {cur_esc} benefit vs alert capacity")
     ax[1].set(xscale="log", xlabel="alert budget (alerts/day)", ylabel="false positives per fraud caught",
               title="Analyst workload per catch")
     ax[0].legend(fontsize=8)
@@ -110,20 +129,24 @@ def main() -> None:
 
     cols = ["alerts_per_day", "queue_utilisation", "frauds_caught", "frauds_total",
             "precision_at_budget", "recall_at_budget", "value_capture",
-            "fp_per_fraud_caught", "fraud_gbp_caught", "net_benefit_gbp"]
+            "fp_per_fraud_caught", "fraud_amount_caught", "net_benefit"]
+    money = {c: f"{c} ({cur_esc})" for c in ("fraud_amount_caught", "net_benefit")}
+    sweep_table = (sweep[sweep["mode"] == "streaming"]
+                   .pivot(index="k_per_day", columns="scorer",
+                          values=["net_benefit", "fp_per_fraud_caught", "recall_at_budget"]))
+    sweep_table.columns = [f"{money.get(metric, metric)}, {scorer}"
+                           for metric, scorer in sweep_table.columns]
     md = [f"# Results ({args.source} data)\n",
           f"Test period: {te['timestamp'].min():%Y-%m-%d} to {te['timestamp'].max():%Y-%m-%d}, "
           f"{len(te):,} transactions, {int(y_te.sum())} frauds.\n",
-          f"Cost model: £{cost.review_cost:g} per review, £{cost.fp_friction_cost:g} friction per false positive.\n",
+          f"Cost model: {cur_esc}{cost.review_cost:g} per review, "
+          f"{cur_esc}{cost.fp_friction_cost:g} friction per false positive.\n",
           f"## Headline: {args.budget} alerts/day\n",
-          head[cols].round(3).to_markdown(), "\n",
+          head[cols].rename(columns=money).round(3).to_markdown(), "\n",
           "## Ranking metrics on test (reference only)\n",
           pd.DataFrame(ranking).T.round(4).to_markdown(), "\n",
           "## Budget sweep (streaming mode)\n",
-          sweep[sweep["mode"] == "streaming"]
-              .pivot(index="k_per_day", columns="scorer",
-                     values=["net_benefit_gbp", "fp_per_fraud_caught", "recall_at_budget"])
-              .round(2).to_markdown(), "\n",
+          sweep_table.round(2).to_markdown(), "\n",
           "## Top features (gain share)\n",
           imp.head(10).round(3).to_markdown(index=False), "\n"]
     if by_mo is not None:

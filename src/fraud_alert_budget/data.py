@@ -49,9 +49,8 @@ def load_ieee_cis(data_dir: str | Path) -> pd.DataFrame:
     was first seen". This approximates a single customer's card.
 
     The dataset's `TransactionDT` is a seconds offset from an unknown start;
-    we anchor it at 2017-12-01, as is conventional. Amounts are USD, but the
-    evaluation treats them as the currency unit (reported as £ for
-    consistency with the rest of the project).
+    we anchor it at 2017-12-01, as is conventional. Amounts are USD; the
+    evaluation is currency-neutral and the scripts report them as $.
     """
     path = Path(data_dir) / "train_transaction.csv"
     if not path.exists():

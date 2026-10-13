@@ -5,12 +5,38 @@
     "precision_at_rate": 0.27246653919694075,
     "recall_at_rate": 0.08001122964626614
   },
+  "cell_means": {
+    "random/past_only": {
+      "pr_auc": 0.3602755372647591,
+      "roc_auc": 0.8577181356832909,
+      "precision_at_rate": 0.655376799322608,
+      "recall_at_rate": 0.18830261542225749
+    },
+    "random/with_leaky": {
+      "pr_auc": 0.49151945862098456,
+      "roc_auc": 0.9019248446644226,
+      "precision_at_rate": 0.8306519898391195,
+      "recall_at_rate": 0.2386723140614548
+    },
+    "temporal/past_only": {
+      "pr_auc": 0.15306687011239295,
+      "roc_auc": 0.8065372776065494,
+      "precision_at_rate": 0.27246653919694075,
+      "recall_at_rate": 0.08001122964626614
+    },
+    "temporal/with_leaky": {
+      "pr_auc": 0.217164218023539,
+      "roc_auc": 0.8360959272325588,
+      "precision_at_rate": 0.39961759082217974,
+      "recall_at_rate": 0.11734980348119034
+    }
+  },
   "inflation_pct_vs_honest": {
     "random split only (same leakage-safe features)": {
-      "pr_auc": 131.7,
-      "roc_auc": 6.1,
-      "precision_at_rate": 138.0,
-      "recall_at_rate": 134.8
+      "pr_auc": 135.4,
+      "roc_auc": 6.3,
+      "precision_at_rate": 140.5,
+      "recall_at_rate": 135.3
     },
     "leaky features only (temporal split)": {
       "pr_auc": 41.9,
@@ -19,10 +45,10 @@
       "recall_at_rate": 46.7
     },
     "both mistakes (random split + leaky features)": {
-      "pr_auc": 217.6,
-      "roc_auc": 11.5,
-      "precision_at_rate": 203.9,
-      "recall_at_rate": 199.7
+      "pr_auc": 221.1,
+      "roc_auc": 11.8,
+      "precision_at_rate": 204.9,
+      "recall_at_rate": 198.3
     }
   }
 }
